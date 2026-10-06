@@ -3,6 +3,9 @@
   "version": "1.0.0",
   "description": "S.O.S. Cosmik - version web du jeu de societe (salle d'attente, lancement par l'admin, visualisation en ligne)",
   "main": "server/index.js",
+  "engines": {
+    "node": ">=18"
+  },
   "scripts": {
     "start": "node server/index.js",
     "dev": "node server/index.js"
