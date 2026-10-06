@@ -21,7 +21,6 @@ function personalState(room, player) {
       isAdmin: player.isAdmin,
       hand: player.hand,
       keys: player.keys,
-      shield: !!player.shield,
     },
     roomCode: room.code,
     minPlayers: MIN_PLAYERS,

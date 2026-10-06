@@ -69,7 +69,6 @@ function addPlayer(room, { name, playerId, socketId }) {
     connected: true,
     hand: [],
     keys: [],
-    shield: false,
   };
   room.players.push(player);
   return { player, error: null };

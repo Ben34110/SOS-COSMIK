@@ -1,7 +1,7 @@
 // Moteur de jeu pour S.O.S. Cosmik
-// Deck : 28 Énergie (10x1, 10x2, 8x3), 20 Sabotage (5 Croche-patte, 5 Bouclier,
-// 5 Surcharge, 4 Coup de coude, 1 Piratage d'accès), + des Clés de sécurité
-// dont le nombre est proportionnel au nombre de joueurs (2 par joueur).
+// Deck : 40 Énergie (14x1, 13x2, 13x3), 11 Sabotage (5 Vol de carte, 3 Surcharge,
+// 2 Échange de main, 1 Piratage d'accès), + des Clés de sécurité dont le nombre
+// est proportionnel au nombre de joueurs (2 par joueur).
 
 const ENERGY_TARGET = 30;
 const KEYS_TO_WIN_SOLO = 4;
@@ -21,9 +21,9 @@ function buildDeck(playerCount) {
   const keyCount = Math.max(KEYS_TO_WIN_SOLO, playerCount * KEYS_PER_PLAYER);
 
   const energyValues = [
-    ...Array(10).fill(1),
-    ...Array(10).fill(2),
-    ...Array(8).fill(3),
+    ...Array(14).fill(1),
+    ...Array(13).fill(2),
+    ...Array(13).fill(3),
   ];
   for (const value of energyValues) {
     cards.push({ id: nextCardId(), type: 'energy', value, label: `Énergie ${value}` });
@@ -31,16 +31,14 @@ function buildDeck(playerCount) {
 
   const sabotageCounts = {
     crochepatte: 5,
-    bouclier: 5,
-    surcharge: 5,
-    coupdecoude: 4,
+    surcharge: 3,
+    coupdecoude: 2,
     piratage: 1,
   };
   const sabotageLabels = {
-    crochepatte: 'Croche-patte',
-    bouclier: 'Bouclier',
+    crochepatte: 'Vol de carte',
     surcharge: 'Surcharge',
-    coupdecoude: 'Coup de coude',
+    coupdecoude: 'Échange de main',
     piratage: "Piratage d'accès",
   };
   for (const [subtype, count] of Object.entries(sabotageCounts)) {
@@ -100,7 +98,6 @@ function startGame(room) {
   for (const p of room.players) {
     p.hand = [];
     p.keys = [];
-    p.shield = false;
   }
 
   for (let i = 0; i < STARTING_HAND; i++) {
@@ -142,17 +139,25 @@ function drawForCurrentPlayer(room) {
 function triggerChaosEnd(room) {
   const game = room.game;
   game.status = 'ended';
-  let minHand = Infinity;
+
+  let maxKeys = -1;
   for (const p of room.players) {
+    if (p.keys.length > maxKeys) maxKeys = p.keys.length;
+  }
+  const topKeyPlayers = room.players.filter((p) => p.keys.length === maxKeys);
+
+  let minHand = Infinity;
+  for (const p of topKeyPlayers) {
     if (p.hand.length < minHand) minHand = p.hand.length;
   }
-  const winners = room.players.filter((p) => p.hand.length === minHand).map((p) => p.id);
+  const winners = topKeyPlayers.filter((p) => p.hand.length === minHand).map((p) => p.id);
+
   game.winner = {
     type: 'chaos',
     playerIds: winners,
-    reason: 'Le vaisseau a explose avant que le moteur n\'atteigne 30 points d\'energie. Le(s) joueur(s) avec le moins de cartes en main active(nt) leur armure de secours.',
+    reason: 'La pioche est épuisée avant que le moteur n\'atteigne 30 points d\'Énergie. Le joueur avec le plus de Clés de sécurité posées gagne seul (égalité départagée par le moins de cartes en main).',
   };
-  addLog(game, 'La pioche est épuisée... le vaisseau explose ! (Victoire par Chaos)');
+  addLog(game, 'La pioche est épuisée... Victoire par Chaos au nombre de Clés de sécurité !');
 }
 
 function checkWinConditions(room) {
@@ -165,9 +170,9 @@ function checkWinConditions(room) {
       game.winner = {
         type: 'solo',
         playerIds: [p.id],
-        reason: `${p.name} a réuni 4 clés de securite et déclenche le verrou d'urgence. Fuite solo dans le mini-pod secret !`,
+        reason: `${p.name} a réuni 4 Clés de sécurité et gagne seul, mettant fin instantanément à la partie !`,
       };
-      addLog(game, `${p.name} déclenche le verrou d'urgence avec 4 cles ! (Victoire Solo Eclair)`);
+      addLog(game, `${p.name} réunit 4 Clés de sécurité ! (Victoire Solo Éclair)`);
       return;
     }
   }
@@ -179,8 +184,8 @@ function checkWinConditions(room) {
       type: 'collective',
       playerIds: escapees,
       reason: escapees.length
-        ? 'Le moteur atteint 30 points d\'energie, la capsule décolle ! Les joueurs avec au moins 2 cles s\'échappent ensemble.'
-        : 'Le moteur atteint 30 points d\'energie, la capsule décolle... mais personne n\'avait assez de clés pour s\'echapper.',
+        ? 'Le moteur atteint 30 points d\'Énergie ! Les joueurs avec au moins 2 Clés de sécurité s\'échappent et gagnent ensemble.'
+        : 'Le moteur atteint 30 points d\'Énergie... mais personne n\'avait assez de Clés de sécurité, tout le monde perd.',
     };
     addLog(game, 'Le moteur atteint 30 points d\'energie ! La capsule décolle. (Victoire Collective)');
   }
@@ -251,40 +256,28 @@ function applyAction(room, player, action) {
 
       game.discard.push(card);
 
-      if (card.subtype === 'bouclier') {
-        player.shield = true;
-        addLog(game, `${player.name} active son Bouclier.`);
-        break;
-      }
-
-      if (target && target.shield) {
-        target.shield = false;
-        addLog(game, `${target.name} bloque le ${card.label} de ${player.name} avec son Bouclier !`);
-        break;
-      }
-
       if (card.subtype === 'crochepatte') {
         if (target.hand.length === 0) {
-          addLog(game, `${player.name} tente un Croche-patte sur ${target.name}, mais sa main est vide.`);
+          addLog(game, `${player.name} tente un Vol de carte sur ${target.name}, mais sa main est vide.`);
           break;
         }
         const idx = Math.floor(Math.random() * target.hand.length);
         const stolen = target.hand.splice(idx, 1)[0];
         player.hand.push(stolen);
-        addLog(game, `${player.name} fait un Croche-patte a ${target.name} et lui vole une carte.`);
+        addLog(game, `${player.name} fait un Vol de carte à ${target.name} et lui vole une carte.`);
       } else if (card.subtype === 'surcharge') {
-        if (game.engine.length === 0) {
-          addLog(game, `${player.name} joue Surcharge, mais le moteur est vide : aucun effet.`);
+        if (game.energyTotal === 0) {
+          addLog(game, `${player.name} joue Surcharge, mais le moteur est déjà à 0 : aucun effet.`);
           break;
         }
-        const destroyed = game.engine.pop();
-        game.energyTotal = Math.max(0, game.energyTotal - destroyed.value);
-        addLog(game, `${player.name} déclenche une Surcharge et détruit une carte Énergie ${destroyed.value} du moteur (total: ${game.energyTotal}/${ENERGY_TARGET}).`);
+        const removed = Math.min(10, game.energyTotal);
+        game.energyTotal -= removed;
+        addLog(game, `${player.name} déclenche une Surcharge et détruit ${removed} points d'Énergie du moteur (total: ${game.energyTotal}/${ENERGY_TARGET}).`);
       } else if (card.subtype === 'coupdecoude') {
         const tmp = player.hand;
         player.hand = target.hand;
         target.hand = tmp;
-        addLog(game, `${player.name} donne un Coup de coude et echange sa main avec ${target.name}.`);
+        addLog(game, `${player.name} déclenche un Échange de main avec ${target.name}.`);
       } else if (card.subtype === 'piratage') {
         if (target.keys.length === 0) {
           addLog(game, `${player.name} tente un Piratage d'accès sur ${target.name}, mais il n'a aucune cle.`);
@@ -350,7 +343,6 @@ function publicGameState(room) {
       connected: p.connected,
       handCount: p.hand ? p.hand.length : 0,
       keysCount: p.keys ? p.keys.length : 0,
-      shield: !!p.shield,
     })),
   };
 }

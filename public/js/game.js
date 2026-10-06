@@ -45,8 +45,6 @@ if (!roomCode || !playerId) {
 let selectedCardIds = [];
 let lastState = null;
 
-const CARD_BACK_IMAGE = 'images/cards/back.png';
-
 const CARD_IMAGES = {
   energy: { 1: 'images/cards/energie-1.png', 2: 'images/cards/energie-2.png', 3: 'images/cards/energie-3.png' },
   key: 'images/cards/cle.png',
@@ -55,7 +53,6 @@ const CARD_IMAGES = {
     surcharge: 'images/cards/surcharge.png',
     coupdecoude: 'images/cards/coupdecoude.png',
     piratage: 'images/cards/piratage.png',
-    // bouclier: pas encore d'illustration -> repli visuel ci-dessous
   },
 };
 
@@ -68,7 +65,7 @@ function cardMeta(card) {
   if (card.type === 'key') {
     return { img: CARD_IMAGES.key, label: 'Clé de sécurité', icon: '🔑' };
   }
-  const fallbackIcons = { crochepatte: '🤜', bouclier: '🛡️', surcharge: '💥', coupdecoude: '🤛', piratage: '🗝️' };
+  const fallbackIcons = { crochepatte: '🤜', surcharge: '💥', coupdecoude: '🤛', piratage: '🗝️' };
   return { img: CARD_IMAGES.sabotage[card.subtype] || null, label: card.label, icon: fallbackIcons[card.subtype] || '❓' };
 }
 
@@ -140,7 +137,7 @@ function renderGame(state) {
       + (p.id === state.currentPlayerId ? ' active-turn' : '')
       + (p.connected ? '' : ' offline');
     chip.innerHTML = `
-      <div class="chip-name">${p.isAdmin ? '👑 ' : ''}${escapeHtml(p.name)}${p.id === state.you.id ? ' (toi)' : ''} ${p.shield ? '<span class="shield-icon">🛡️</span>' : ''}</div>
+      <div class="chip-name">${p.isAdmin ? '👑 ' : ''}${escapeHtml(p.name)}${p.id === state.you.id ? ' (toi)' : ''}</div>
       <div class="chip-stats"><span>Main : ${p.handCount}</span><span>🔑 ${p.keysCount}</span></div>
       ${p.id === state.you.id ? '' : cardBackRow(p.handCount)}
     `;
