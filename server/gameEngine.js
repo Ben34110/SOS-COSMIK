@@ -74,12 +74,17 @@ function createGameState() {
     turnIndex: 0,
     log: [],
     winner: null,
+    lastAction: null,
   };
 }
 
 function addLog(game, text) {
   game.log.push({ text, ts: Date.now() });
   if (game.log.length > 30) game.log.shift();
+}
+
+function setLastAction(game, data) {
+  game.lastAction = { ts: Date.now(), ...data };
 }
 
 function startGame(room) {
@@ -91,6 +96,7 @@ function startGame(room) {
   game.energyTotal = 0;
   game.log = [];
   game.winner = null;
+  game.lastAction = null;
 
   game.turnOrder = shuffle(players.map((p) => p.id));
   game.turnIndex = 0;
@@ -111,8 +117,6 @@ function startGame(room) {
   const keyCount = game.deck.filter((c) => c.type === 'key').length;
   game.status = 'playing';
   addLog(game, `La partie commence avec ${players.length} joueurs et ${keyCount} Clés de sécurité dans le deck ! Le vaisseau explose dans 5 minutes...`);
-
-  drawForCurrentPlayer(room);
 }
 
 function currentPlayer(room) {
@@ -195,7 +199,6 @@ function endTurn(room) {
   const game = room.game;
   if (game.status === 'ended') return;
   game.turnIndex = (game.turnIndex + 1) % game.turnOrder.length;
-  drawForCurrentPlayer(room);
 }
 
 function findOtherPlayer(room, actingPlayer, targetId) {
@@ -225,6 +228,13 @@ function applyAction(room, player, action) {
       game.engine.push(card);
       game.energyTotal += card.value;
       addLog(game, `${player.name} contribue au moteur avec une carte Énergie ${card.value} (total: ${game.energyTotal}/${ENERGY_TARGET}).`);
+      setLastAction(game, {
+        playerName: player.name, playerId: player.id,
+        type: 'contribuer',
+        card,
+        text: `contribue au moteur`,
+        sub: `+${card.value} Énergie (${game.energyTotal}/${ENERGY_TARGET})`,
+      });
       break;
     }
     case 'securiser': {
@@ -235,6 +245,14 @@ function applyAction(room, player, action) {
       }
       player.keys.push(card);
       addLog(game, `${player.name} sécurise sa place avec une Clé de sécurité (${player.keys.length} cle${player.keys.length > 1 ? 's' : ''}).`);
+      setLastAction(game, {
+        playerName: player.name, playerId: player.id,
+        type: 'securiser',
+        card,
+        text: `sécurise sa place`,
+        sub: `🔑 ${player.keys.length} clé${player.keys.length > 1 ? 's' : ''} sécurisée${player.keys.length > 1 ? 's' : ''}`,
+        isKeyEvent: true,
+      });
       break;
     }
     case 'sabotage': {
@@ -258,34 +276,44 @@ function applyAction(room, player, action) {
 
       if (card.subtype === 'crochepatte') {
         if (target.hand.length === 0) {
-          addLog(game, `${player.name} tente un Vol de carte sur ${target.name}, mais sa main est vide.`);
+          const text = `${player.name} tente un Vol de carte sur ${target.name}, mais sa main est vide.`;
+          addLog(game, text);
+          setLastAction(game, { playerName: player.name, playerId: player.id, type: 'sabotage', card, targetName: target.name, text: 'joue Vol de carte', sub: `${target.name} n'avait aucune carte` });
           break;
         }
         const idx = Math.floor(Math.random() * target.hand.length);
         const stolen = target.hand.splice(idx, 1)[0];
         player.hand.push(stolen);
         addLog(game, `${player.name} fait un Vol de carte à ${target.name} et lui vole une carte.`);
+        setLastAction(game, { playerName: player.name, playerId: player.id, type: 'sabotage', card, targetName: target.name, text: 'joue Vol de carte', sub: `vole une carte à ${target.name}` });
       } else if (card.subtype === 'surcharge') {
         if (game.energyTotal === 0) {
-          addLog(game, `${player.name} joue Surcharge, mais le moteur est déjà à 0 : aucun effet.`);
+          const text = `${player.name} joue Surcharge, mais le moteur est déjà à 0 : aucun effet.`;
+          addLog(game, text);
+          setLastAction(game, { playerName: player.name, playerId: player.id, type: 'sabotage', card, text: 'joue Surcharge', sub: 'le moteur était déjà à 0' });
           break;
         }
         const removed = Math.min(10, game.energyTotal);
         game.energyTotal -= removed;
         addLog(game, `${player.name} déclenche une Surcharge et détruit ${removed} points d'Énergie du moteur (total: ${game.energyTotal}/${ENERGY_TARGET}).`);
+        setLastAction(game, { playerName: player.name, playerId: player.id, type: 'sabotage', card, text: 'joue Surcharge', sub: `-${removed} Énergie (${game.energyTotal}/${ENERGY_TARGET})` });
       } else if (card.subtype === 'coupdecoude') {
         const tmp = player.hand;
         player.hand = target.hand;
         target.hand = tmp;
         addLog(game, `${player.name} déclenche un Échange de main avec ${target.name}.`);
+        setLastAction(game, { playerName: player.name, playerId: player.id, type: 'sabotage', card, targetName: target.name, text: 'joue Échange de main', sub: `échange sa main avec ${target.name}` });
       } else if (card.subtype === 'piratage') {
         if (target.keys.length === 0) {
-          addLog(game, `${player.name} tente un Piratage d'accès sur ${target.name}, mais il n'a aucune cle.`);
+          const text = `${player.name} tente un Piratage d'accès sur ${target.name}, mais il n'a aucune cle.`;
+          addLog(game, text);
+          setLastAction(game, { playerName: player.name, playerId: player.id, type: 'sabotage', card, targetName: target.name, text: "joue Piratage d'accès", sub: `${target.name} n'avait aucune clé` });
           break;
         }
         const stolenKey = target.keys.pop();
         player.keys.push(stolenKey);
         addLog(game, `${player.name} pirate l'accès de ${target.name} et lui vole une Clé de sécurité !`);
+        setLastAction(game, { playerName: player.name, playerId: player.id, type: 'sabotage', card, targetName: target.name, text: "joue Piratage d'accès", sub: `vole une clé à ${target.name}`, isKeyEvent: true });
       }
       break;
     }
@@ -305,9 +333,17 @@ function applyAction(room, player, action) {
         drawn++;
       }
       addLog(game, `${player.name} defausse ${discarded.length} carte(s) et en repioche ${drawn}.`);
+      setLastAction(game, {
+        playerName: player.name, playerId: player.id,
+        type: 'defausser',
+        card: discarded[0] || null,
+        cardsCount: discarded.length,
+        text: 'défausse et recharge',
+        sub: `${discarded.length} carte(s) défaussée(s), ${drawn} repiochée(s)`,
+      });
       if (game.deck.length === 0 && discarded.length > drawn) {
-        checkWinConditions(room);
-        if (game.status === 'ended') return {};
+        triggerChaosEnd(room);
+        return {};
       }
       break;
     }
@@ -317,13 +353,23 @@ function applyAction(room, player, action) {
 
   checkWinConditions(room);
   if (game.status !== 'ended') {
-    endTurn(room);
+    // On pioche après avoir joué (pas avant), sauf pour "défausser" qui gère déjà sa propre pioche.
+    if (action.type !== 'defausser') {
+      drawForCurrentPlayer(room);
+    }
+    if (game.status !== 'ended') {
+      endTurn(room);
+    }
   }
   return {};
 }
 
 function publicGameState(room) {
   const game = room.game;
+  const orderedPlayers = game.turnOrder.length
+    ? game.turnOrder.map((pid) => room.players.find((p) => p.id === pid)).filter(Boolean)
+    : room.players;
+
   return {
     status: game.status,
     energyTotal: game.energyTotal,
@@ -336,7 +382,8 @@ function publicGameState(room) {
     currentPlayerId: currentPlayer(room)?.id || null,
     log: game.log,
     winner: game.winner,
-    players: room.players.map((p) => ({
+    lastAction: game.lastAction,
+    players: orderedPlayers.map((p) => ({
       id: p.id,
       name: p.name,
       isAdmin: p.isAdmin,

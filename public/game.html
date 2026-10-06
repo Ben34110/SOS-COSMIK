@@ -50,19 +50,23 @@
     <div class="board">
       <div class="players-strip" id="players-strip"></div>
 
-      <div class="center-area">
-        <div class="log-panel">
-          <h3>Journal</h3>
-          <ul id="log-list"></ul>
+      <div class="main-stage">
+        <div class="last-action-panel" id="last-action-panel">
+          <p class="hint">En attente de la première action...</p>
+        </div>
+
+        <div class="hand-area">
+          <h3>Ta main</h3>
+          <div class="hand" id="hand"></div>
+          <div class="action-bar" id="action-bar"></div>
+          <p class="error" id="action-error"></p>
         </div>
       </div>
 
-      <div class="hand-area">
-        <h3>Ta main</h3>
-        <div class="hand" id="hand"></div>
-        <div class="action-bar" id="action-bar"></div>
-        <p class="error" id="action-error"></p>
-      </div>
+      <aside class="log-sidebar">
+        <h3>Journal</h3>
+        <ul id="log-list"></ul>
+      </aside>
     </div>
   </section>
 

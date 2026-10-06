@@ -44,6 +44,7 @@ if (!roomCode || !playerId) {
 
 let selectedCardIds = [];
 let lastState = null;
+let lastRenderedActionTs = null;
 
 const CARD_IMAGES = {
   energy: { 1: 'images/cards/energie-1.png', 2: 'images/cards/energie-2.png', 3: 'images/cards/energie-3.png' },
@@ -138,7 +139,7 @@ function renderGame(state) {
       + (p.connected ? '' : ' offline');
     chip.innerHTML = `
       <div class="chip-name">${p.isAdmin ? '👑 ' : ''}${escapeHtml(p.name)}${p.id === state.you.id ? ' (toi)' : ''}</div>
-      <div class="chip-stats"><span>Main : ${p.handCount}</span><span>🔑 ${p.keysCount}</span></div>
+      <div class="chip-stats"><span>Main : ${p.handCount}</span><span class="keys-badge" data-player-id="${p.id}">🔑 ${p.keysCount}</span></div>
       ${p.id === state.you.id ? '' : cardBackRow(p.handCount)}
     `;
     strip.appendChild(chip);
@@ -151,6 +152,8 @@ function renderGame(state) {
     li.textContent = entry.text;
     logList.appendChild(li);
   });
+
+  renderLastAction(state);
 
   const hand = document.getElementById('hand');
   hand.innerHTML = '';
@@ -174,6 +177,56 @@ function renderGame(state) {
   });
 
   renderActionBar(state, isMyTurn);
+}
+
+function renderLastAction(state) {
+  const panel = document.getElementById('last-action-panel');
+  const la = state.lastAction;
+
+  if (!la) {
+    panel.innerHTML = '<p class="hint">En attente de la première action...</p>';
+    panel.classList.remove('key-event');
+    return;
+  }
+
+  const isNew = la.ts !== lastRenderedActionTs;
+  lastRenderedActionTs = la.ts;
+
+  let cardHtml = '';
+  if (la.card) {
+    const meta = cardMeta(la.card);
+    if (meta.img) {
+      cardHtml = `<div class="la-card" style="background-image:url('${meta.img}')"></div>`;
+    } else {
+      cardHtml = `<div class="la-card card sabotage" style="display:flex;align-items:center;justify-content:center;"><div class="icon">${meta.icon}</div></div>`;
+    }
+  }
+  const extra = la.cardsCount && la.cardsCount > 1 ? ` <span class="hint small">(+${la.cardsCount - 1} autre${la.cardsCount > 2 ? 's' : ''})</span>` : '';
+
+  panel.innerHTML = `
+    ${cardHtml}
+    <div class="la-text">
+      <span class="la-player">${escapeHtml(la.playerName)}</span> ${escapeHtml(la.text)}${la.targetName ? ` → ${escapeHtml(la.targetName)}` : ''}${extra}
+      <span class="la-sub">${escapeHtml(la.sub || '')}</span>
+    </div>
+  `;
+
+  panel.classList.toggle('key-event', !!la.isKeyEvent);
+
+  if (isNew) {
+    panel.classList.remove('pop');
+    void panel.offsetWidth;
+    panel.classList.add('pop');
+
+    if (la.isKeyEvent && la.playerId) {
+      const badge = document.querySelector(`.keys-badge[data-player-id="${la.playerId}"]`);
+      if (badge) {
+        badge.classList.remove('key-flash');
+        void badge.offsetWidth;
+        badge.classList.add('key-flash');
+      }
+    }
+  }
 }
 
 function toggleSelect(cardId) {

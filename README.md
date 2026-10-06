@@ -18,7 +18,7 @@ Puis ouvrir [http://localhost:3000](http://localhost:3000) dans plusieurs onglet
 1. **Créer une salle** : le premier joueur devient automatiquement administrateur et reçoit un code de salle à 5 caractères à partager.
 2. **Rejoindre une salle** : les autres joueurs entrent leur pseudo + le code, et atterrissent dans la salle d'attente (4 à 8 joueurs).
 3. **Lancer la partie** : seul l'administrateur voit le bouton "🚀 Lancer la partie", actif à partir de 4 joueurs connectés.
-4. **Jouer** : chaque joueur pioche automatiquement en début de tour, puis choisit une seule action — contribuer au moteur, sécuriser sa place, jouer un coup bas, ou défausser/recharger. Le plateau (moteur d'énergie, clés, mains des autres, journal des événements) est visualisé en direct pour tout le monde via Socket.IO.
+4. **Jouer** : chaque joueur choisit une seule action — contribuer au moteur, sécuriser sa place, jouer un coup bas, ou défausser/recharger — puis pioche automatiquement 1 carte pour conclure son tour (sauf avec "défausser/recharger", qui gère déjà sa propre pioche). Le plateau (moteur d'énergie, clés, mains des autres, journal des événements) est visualisé en direct pour tout le monde via Socket.IO.
 5. **Fin de partie** : la victoire Collective, Solo Éclair ou par Chaos est détectée automatiquement et affichée à tous.
 
 ## Déploiement en ligne (Render)
