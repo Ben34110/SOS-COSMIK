@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>S.O.S. Cosmik</title>
+<link rel="stylesheet" href="css/style.css" />
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@600;800&family=Rubik:wght@400;500;700&display=swap" rel="stylesheet">
+</head>
+<body>
+<div class="stars"></div>
+
+<main class="landing">
+  <header class="brand">
+    <h1>S.O.S. <span>COSMIK</span></h1>
+    <p class="tagline">Votre vaisseau explose dans 5 minutes. Une seule capsule. Coopérez... ou trahissez.</p>
+  </header>
+
+  <section class="panel-grid">
+    <div class="panel">
+      <h2>Créer une salle</h2>
+      <p class="hint">Tu deviens l'administrateur : c'est toi qui lanceras la partie quand tout le monde sera prêt.</p>
+      <label>Ton pseudo</label>
+      <input id="create-name" type="text" maxlength="20" placeholder="Ex: Zarko" />
+      <button id="create-btn" class="btn btn-primary">Créer la salle</button>
+      <p class="error" id="create-error"></p>
+    </div>
+
+    <div class="panel">
+      <h2>Rejoindre une salle</h2>
+      <p class="hint">Entre le code donné par l'administrateur de la salle.</p>
+      <label>Ton pseudo</label>
+      <input id="join-name" type="text" maxlength="20" placeholder="Ex: Nova" />
+      <label>Code de la salle</label>
+      <input id="join-code" type="text" maxlength="5" placeholder="Ex: X7K2P" style="text-transform:uppercase" />
+      <button id="join-btn" class="btn btn-secondary">Rejoindre</button>
+      <p class="error" id="join-error"></p>
+    </div>
+  </section>
+
+  <section class="rules">
+    <h3>Rappel express des règles</h3>
+    <ul>
+      <li><strong>4 à 8 joueurs</strong> — 1 seule action par tour après avoir pioché.</li>
+      <li><strong>Victoire Collective :</strong> le moteur atteint 30 ⚡, ceux qui ont ≥2 🔑 s'échappent ensemble.</li>
+      <li><strong>Victoire Solo Éclair :</strong> un joueur réunit 4 🔑 et s'enfuit seul.</li>
+      <li><strong>Victoire par Chaos :</strong> la pioche s'épuise avant 30 ⚡ — le joueur avec le moins de cartes gagne seul.</li>
+    </ul>
+  </section>
+</main>
+
+<script src="/socket.io/socket.io.js"></script>
+<script src="js/landing.js"></script>
+</body>
+</html>
