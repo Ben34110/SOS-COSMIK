@@ -5,6 +5,7 @@ const roomCode = (params.get('room') || '').toUpperCase();
 const playerId = roomCode ? localStorage.getItem('sos_room_' + roomCode) : null;
 
 const views = {
+  connecting: document.getElementById('view-connecting'),
   waiting: document.getElementById('view-waiting'),
   game: document.getElementById('view-game'),
   ended: document.getElementById('view-ended'),
@@ -24,7 +25,17 @@ function showGlobalError(msg) {
 if (!roomCode || !playerId) {
   showGlobalError("Impossible de retrouver cette salle. Retourne à l'accueil pour en créer ou en rejoindre une.");
 } else {
+  showView('connecting');
+  const slowHintTimer = setTimeout(() => {
+    document.getElementById('connecting-msg').textContent = "Le serveur se réveille (jusqu'à 30-50s après une période d'inactivité)... merci de patienter.";
+  }, 4000);
+  const timeoutTimer = setTimeout(() => {
+    showGlobalError('Le serveur ne répond pas. Vérifie ta connexion et réessaie dans quelques instants.');
+  }, 60000);
+
   socket.emit('request_state', { code: roomCode, playerId }, (res) => {
+    clearTimeout(slowHintTimer);
+    clearTimeout(timeoutTimer);
     if (res && res.error) {
       showGlobalError(res.error);
     }
