@@ -413,8 +413,8 @@ input[type="text"]:focus {
 }
 
 .card {
-  width: 90px;
-  height: 120px;
+  width: 92px;
+  height: 129px;
   border-radius: 12px;
   display: flex;
   flex-direction: column;
@@ -429,6 +429,7 @@ input[type="text"]:focus {
   text-align: center;
   padding: 6px;
   gap: 6px;
+  flex-shrink: 0;
 }
 
 .card:hover { transform: translateY(-6px); }
@@ -444,6 +445,47 @@ input[type="text"]:focus {
 .card.energy { background: linear-gradient(160deg, #ffd27a, var(--orange)); }
 .card.key { background: linear-gradient(160deg, #9effd0, var(--green)); }
 .card.sabotage { background: linear-gradient(160deg, #ff9ad6, var(--pink)); }
+
+.card.card-img {
+  background-size: cover;
+  background-position: center;
+  padding: 0;
+  border-radius: 10px;
+  box-shadow: 0 2px 10px rgba(0,0,0,0.4);
+}
+
+.card.card-img.back-face {
+  cursor: default;
+}
+
+.card-back-row {
+  display: flex;
+  gap: 2px;
+  flex-wrap: wrap;
+  margin-top: 4px;
+}
+
+.card-back-mini {
+  width: 20px;
+  height: 28px;
+  border-radius: 4px;
+  background-image: url('../images/cards/back.png');
+  background-size: cover;
+  background-position: center;
+  box-shadow: 0 1px 4px rgba(0,0,0,0.5);
+  flex-shrink: 0;
+}
+
+.deck-pill {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.deck-pill .card-back-mini {
+  width: 18px;
+  height: 25px;
+}
 
 .action-bar {
   display: flex;

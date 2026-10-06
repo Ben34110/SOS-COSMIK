@@ -45,25 +45,40 @@ if (!roomCode || !playerId) {
 let selectedCardIds = [];
 let lastState = null;
 
-const CARD_META = {
-  energy: (card) => ({ icon: '⚡', label: `Energie ${card.value}`, cls: 'energy' }),
-  key: () => ({ icon: '🔑', label: 'Clé de sécurité', cls: 'key' }),
-  sabotage: (card) => {
-    const icons = {
-      crochepatte: '🤜',
-      bouclier: '🛡️',
-      surcharge: '💥',
-      coupdecoude: '🤛',
-      piratage: '🗝️',
-    };
-    return { icon: icons[card.subtype] || '❓', label: card.label, cls: 'sabotage' };
+const CARD_BACK_IMAGE = 'images/cards/back.png';
+
+const CARD_IMAGES = {
+  energy: { 1: 'images/cards/energie-1.png', 2: 'images/cards/energie-2.png', 3: 'images/cards/energie-3.png' },
+  key: 'images/cards/cle.png',
+  sabotage: {
+    crochepatte: 'images/cards/crochepatte.png',
+    surcharge: 'images/cards/surcharge.png',
+    coupdecoude: 'images/cards/coupdecoude.png',
+    piratage: 'images/cards/piratage.png',
+    // bouclier: pas encore d'illustration -> repli visuel ci-dessous
   },
 };
 
 const NEEDS_TARGET = ['crochepatte', 'coupdecoude', 'piratage'];
 
 function cardMeta(card) {
-  return CARD_META[card.type](card);
+  if (card.type === 'energy') {
+    return { img: CARD_IMAGES.energy[card.value], label: `Énergie ${card.value}`, icon: '⚡' };
+  }
+  if (card.type === 'key') {
+    return { img: CARD_IMAGES.key, label: 'Clé de sécurité', icon: '🔑' };
+  }
+  const fallbackIcons = { crochepatte: '🤜', bouclier: '🛡️', surcharge: '💥', coupdecoude: '🤛', piratage: '🗝️' };
+  return { img: CARD_IMAGES.sabotage[card.subtype] || null, label: card.label, icon: fallbackIcons[card.subtype] || '❓' };
+}
+
+function cardBackRow(count, max = 8) {
+  const shown = Math.min(count, max);
+  let html = '<div class="card-back-row">';
+  for (let i = 0; i < shown; i++) html += '<span class="card-back-mini"></span>';
+  if (count > max) html += `<span class="hint small">+${count - max}</span>`;
+  html += '</div>';
+  return html;
 }
 
 function renderWaiting(state) {
@@ -126,7 +141,8 @@ function renderGame(state) {
       + (p.connected ? '' : ' offline');
     chip.innerHTML = `
       <div class="chip-name">${p.isAdmin ? '👑 ' : ''}${escapeHtml(p.name)}${p.id === state.you.id ? ' (toi)' : ''} ${p.shield ? '<span class="shield-icon">🛡️</span>' : ''}</div>
-      <div class="chip-stats"><span>🂠 ${p.handCount}</span><span>🔑 ${p.keysCount}</span></div>
+      <div class="chip-stats"><span>Main : ${p.handCount}</span><span>🔑 ${p.keysCount}</span></div>
+      ${p.id === state.you.id ? '' : cardBackRow(p.handCount)}
     `;
     strip.appendChild(chip);
   });
@@ -144,8 +160,15 @@ function renderGame(state) {
   state.you.hand.forEach((card) => {
     const meta = cardMeta(card);
     const div = document.createElement('div');
-    div.className = `card ${meta.cls}` + (selectedCardIds.includes(card.id) ? ' selected' : '');
-    div.innerHTML = `<div class="icon">${meta.icon}</div><div>${meta.label}</div>`;
+    const selectedCls = selectedCardIds.includes(card.id) ? ' selected' : '';
+    if (meta.img) {
+      div.className = `card card-img${selectedCls}`;
+      div.style.backgroundImage = `url('${meta.img}')`;
+      div.title = meta.label;
+    } else {
+      div.className = `card sabotage${selectedCls}`;
+      div.innerHTML = `<div class="icon">${meta.icon}</div><div>${meta.label}</div>`;
+    }
     div.addEventListener('click', () => {
       if (!isMyTurn) return;
       toggleSelect(card.id);
