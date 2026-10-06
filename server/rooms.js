@@ -57,7 +57,7 @@ function addPlayer(room, { name, playerId, socketId }) {
   }
   const activeCount = room.players.filter((p) => p.connected).length;
   if (activeCount >= MAX_PLAYERS) {
-    return { player: null, error: 'La salle est pleine (8 joueurs maximum).' };
+    return { player: null, error: `La salle est pleine (${MAX_PLAYERS} joueurs maximum).` };
   }
 
   const isAdmin = room.players.length === 0;

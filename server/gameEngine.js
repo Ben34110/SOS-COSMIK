@@ -1,21 +1,24 @@
 // Moteur de jeu pour S.O.S. Cosmik
-// 60 cartes : 28 Énergie (10x1, 10x2, 8x3), 20 Sabotage (5 Croche-patte, 5 Bouclier,
-// 5 Surcharge, 4 Coup de coude, 1 Piratage d'accès), 12 Clé de sécurité.
+// Deck : 28 Énergie (10x1, 10x2, 8x3), 20 Sabotage (5 Croche-patte, 5 Bouclier,
+// 5 Surcharge, 4 Coup de coude, 1 Piratage d'accès), + des Clés de sécurité
+// dont le nombre est proportionnel au nombre de joueurs (2 par joueur).
 
 const ENERGY_TARGET = 30;
 const KEYS_TO_WIN_SOLO = 4;
 const KEYS_TO_ESCAPE_COLLECTIVE = 2;
 const STARTING_HAND = 4;
-const MIN_PLAYERS = 4;
-const MAX_PLAYERS = 8;
+const MIN_PLAYERS = 3;
+const MAX_PLAYERS = 6;
+const KEYS_PER_PLAYER = 2;
 
 let cardIdCounter = 1;
 function nextCardId() {
   return 'c' + (cardIdCounter++);
 }
 
-function buildDeck() {
+function buildDeck(playerCount) {
   const cards = [];
+  const keyCount = Math.max(KEYS_TO_WIN_SOLO, playerCount * KEYS_PER_PLAYER);
 
   const energyValues = [
     ...Array(10).fill(1),
@@ -46,7 +49,7 @@ function buildDeck() {
     }
   }
 
-  for (let i = 0; i < 12; i++) {
+  for (let i = 0; i < keyCount; i++) {
     cards.push({ id: nextCardId(), type: 'key', label: 'Clé de sécurité' });
   }
 
@@ -83,14 +86,14 @@ function addLog(game, text) {
 
 function startGame(room) {
   const game = room.game;
-  game.deck = shuffle(buildDeck());
+  const players = room.players.filter((p) => p.connected);
+  game.deck = shuffle(buildDeck(players.length));
   game.discard = [];
   game.engine = [];
   game.energyTotal = 0;
   game.log = [];
   game.winner = null;
 
-  const players = room.players.filter((p) => p.connected);
   game.turnOrder = shuffle(players.map((p) => p.id));
   game.turnIndex = 0;
 
@@ -108,8 +111,9 @@ function startGame(room) {
     }
   }
 
+  const keyCount = game.deck.filter((c) => c.type === 'key').length;
   game.status = 'playing';
-  addLog(game, 'La partie commence ! Le vaisseau explose dans 5 minutes...');
+  addLog(game, `La partie commence avec ${players.length} joueurs et ${keyCount} Clés de sécurité dans le deck ! Le vaisseau explose dans 5 minutes...`);
 
   drawForCurrentPlayer(room);
 }
